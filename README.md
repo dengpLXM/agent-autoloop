@@ -6,6 +6,8 @@
 
 [上手](#上手) · [场景模板](#拿来即用的场景模板) · [插件](#插件体系四个方向都能自由替换) · [内核](#内核的四个机制) · [文档](#更多文档)
 
+本仓库是 [Agent Autoloop](https://github.com/KKKKhazix/agent-autoloop) 的分支，用于在 macOS 上运行定时报表和通知。
+
 ![架构图](docs/architecture.svg)
 
 ## 它解决什么问题？
@@ -22,13 +24,11 @@
 
 支持 macOS 和 Linux。运行前需要装好 Node 24、Git、curl，以及任意一个你已经登录好的命令行 Agent，不需要 GitHub 账号。也可以直接把[安装说明](INSTALL.md)丢给你的 Agent，让它替你装好。
 
-> **Windows 版：待定。** 很多朋友在问 Windows 版，我都看到了。我现在人在外面出差，手边没有 Windows 电脑，没法真机开发和测试，所以现在还不能在 Windows 上用。这个周末（11 月 7、8 日）回家后，我会把它开发完，做完兼容性测试，再正式推出。进度会更新在 [#17](https://github.com/KKKKhazix/agent-autoloop/issues/17)。
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/KKKKhazix/agent-autoloop/main/install.sh | sh
 ```
 
-安装和 `agent-autoloop update` 都装最新的 [Release](https://github.com/KKKKhazix/agent-autoloop/releases)，那是通过了全部检查的版本。
+上面的命令安装上游的最新 [Release](https://github.com/KKKKhazix/agent-autoloop/releases)。要从本分支安装，先克隆本仓库，再按安装说明用 `AGENT_AUTOLOOP_REPO` 指定克隆目录。之后 `agent-autoloop update` 跟随安装时使用的仓库。[从指定仓库安装](INSTALL.md)
 
 装好后用你本机的 Agent 真实走一遍“提问 → 退出等回复 → 拍板 → 接着干完”：
 
@@ -116,6 +116,15 @@ Agent 结束了这一轮，问了你一个问题。它现在不占进程、不�
 ````
 
 除了提问（`ask`），还能发通知（`notice`）、关闭已解决的卡片（`resolve`）、预约复查（`later`）和触发新事件（`events`）。通告不需要回答，但结案时可以顺手写一句处理说明，这句话会留在卡片上。万一 JSON 写错了，中台只让它在原会话里重写最后这段回复，不会把已经干完的业务重做一遍；重写也失败时，保留原结论并通知你回执没有生效。接着旧会话跑也一样：会话接不上才开新的；接上了、干到一半断了，就算没跑成，过几分钟回到原会话重试，不开新会话重做。
+
+## 本机在跑的任务
+
+| 任务 | 调度和交付 |
+|---|---|
+| 异常日志日报 | 每天北京时间 10:00 触发，由 Claude Code 根据工作日日历和上次成功报送的时间确定统计区间。线上只读采集，核对后生成 Excel，归档到钉钉并私聊通知。 |
+| 项目进展周报 | 每周一北京时间 10:00 触发，由 Claude Code 汇总禅道项目的上周进展，写入钉钉表格并发送结果通知。 |
+
+两项任务分别使用自己的工作目录和手册。异常日志日报切换到 Claude Code 时，已验证后台能读取技能并执行只读的日期规划命令。仓库提供迁移步骤和适配器示例，实际调度规则、业务数据和凭据留在本机。[日报迁移说明](docs/plugins.md#将现有日志日报切换到-claude-code)
 
 ## 拿来即用的场景模板
 

@@ -6,6 +6,8 @@
 
 [Get started](#get-started) · [Recipes](#ready-to-use-recipes) · [Plugins](#plugin-ecosystem-swap-any-of-the-four-sides) · [Kernel](#four-kernel-mechanisms) · [Docs](#documentation)
 
+This fork of [Agent Autoloop](https://github.com/KKKKhazix/agent-autoloop) is used to run scheduled reports and notifications on macOS.
+
 ![Architecture](docs/architecture.en.svg)
 
 ## What problem does it solve?
@@ -22,13 +24,11 @@ Most of us use command-line agents like Claude Code or Codex by babysitting a te
 
 Works on macOS and Linux. You need Node 24, Git, curl, and at least one command-line agent already signed in; no GitHub account required. You can also hand the [installation guide](INSTALL.md) to your agent and let it install everything for you.
 
-> **Windows: pending.** Many of you have asked for a Windows version, and I've seen every request. I'm away on a work trip without a Windows machine, so I can't build or test it on real hardware, and it doesn't run on Windows yet. When I get home this weekend (November 7–8), I'll finish it, run compatibility tests, and then release it properly. Progress will be posted in [#17](https://github.com/KKKKhazix/agent-autoloop/issues/17).
-
 ```bash
 curl -fsSL https://raw.githubusercontent.com/KKKKhazix/agent-autoloop/main/install.sh | sh
 ```
 
-The installer and `agent-autoloop update` both install the newest [release](https://github.com/KKKKhazix/agent-autoloop/releases), which has passed every check.
+The command above installs the latest upstream [release](https://github.com/KKKKhazix/agent-autoloop/releases). To install this fork, clone it and set `AGENT_AUTOLOOP_REPO` to the checkout path. Subsequent runs of `agent-autoloop update` follow the repository used for installation. [Installation guide](INSTALL.md)
 
 Then run a real loop with your own agent — ask, exit while it waits, make the call, resume:
 
@@ -118,6 +118,15 @@ Order checked. We have enough stock in the warehouse.
 ````
 
 Besides `ask`, receipts can send notifications (`notice`), resolve open cards (`resolve`), schedule follow-up checks (`later`), and emit new events (`events`). A notice asks for nothing, but you can add a line of your own when you settle one, and it stays on the card. If the JSON is invalid, the hub has the agent rewrite just that final message in the same session, without repeating completed work. If rewriting also fails, it keeps the original conclusion and tells you the receipt was not applied. Going on in an old session works the same way: a new session starts only when the old one can't be continued. If it was continued and then broke partway, the run counts as failed and is retried in that session a few minutes later, not redone in a new one.
+
+## Workflows running locally
+
+| Workflow | Schedule and delivery |
+|---|---|
+| Daily error log report | Triggers at 10 AM Beijing time. Claude Code uses the workday calendar and the last successful report to set the reporting window. It reads production logs, verifies the findings, then archives an Excel report in DingTalk and sends a private notification. |
+| Weekly project progress report | Triggers at 10 AM Beijing time on Mondays. Claude Code summarizes the previous week's ZenTao project progress, records it in a DingTalk table, and sends a notification. |
+
+Each workflow has its own working directory and runbook. During the daily report migration, Claude Code successfully read a skill and ran the read-only date planning command in the background. The repository includes migration steps and an adapter example. Live scheduling rules, business data, and credentials stay on the local machine. [Daily report migration guide (Chinese)](docs/plugins.md#将现有日志日报切换到-claude-code)
 
 ## Ready-to-use recipes
 
