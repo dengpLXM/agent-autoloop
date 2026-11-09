@@ -49,6 +49,34 @@ node --disable-warning=ExperimentalWarning --test --test-name-pattern='agent-aut
 
 只需要打印最后一条消息时，用内置 `command` 加参数数组即可，不必写插件。
 
+### 将现有日志日报切换到 Claude Code
+
+1. 在现有规则里找到日报的 `to` 和对应 Agent。如果只有日报使用该 Agent，把它的 `use` 改成 `claude`。如果其他规则共用该 Agent，新增日报专用 Agent，只把日报的 `to` 指向它。沿用原工作目录、触发时间、日报手册和通知设置。
+2. 在接单电脑上运行 `claude auth status`。让 Claude 在原工作目录读取日报手册，并用和接单程序相同的后台方式运行只读的日期规划命令，核实上一日窗口和补报起点。只读预检到此结束，正式运行再生成、归档和发送报告。
+3. 如果日报依赖工作目录之外的技能，或需要在后台调用生成报表的命令，可用专用适配器补充路径和工具权限。继续使用 `edit`，并核对 Claude Code 的本机权限规则。下面的适配器继承内置的会话续接和用量统计。
+
+例如，把以下文件放在默认安装目录的 `~/.agent-autoloop/plugins/claude-log-report/agent.ts`，将日报 Agent 的 `use` 设为 `claude-log-report`。技能路径和命令是占位示例，启用前替换成实际路径与所需命令。
+
+```ts
+import claude from "../../app/plugins/claude/agent.ts";
+import type { Adapter } from "../../app/worker/agents.ts";
+
+export default {
+  ...claude,
+  command(turn) {
+    return [
+      ...claude.command(turn),
+      "--add-dir",
+      "/path/to/report-skills",
+      "--allowedTools",
+      "Bash(python3 report.py plan)",
+    ];
+  },
+} satisfies Adapter;
+```
+
+运行 `agent-autoloop check` 校验，再用 `agent-autoloop status` 确认 Claude 接单程序在线和下次触发时间。已经领取的任务按原执行器完成。实际规则、日志、报告、服务地址和登录凭据留在各自的私有位置。
+
 ### 浏览器接入
 
 浏览器工具装在运行 Agent 的电脑上，由该 CLI 的工具配置或项目 Skill 提供。Codex 插件启动的是后台 [`codex exec`](https://developers.openai.com/codex/noninteractive/)；可以使用它已配置的 [MCP 工具](https://developers.openai.com/codex/mcp/)，不能只凭桌面应用能打开网页就认定后台也能访问同一浏览器。
